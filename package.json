@@ -1,0 +1,7 @@
+{
+  "name": "@saulmaldonado/eslint-config",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}
