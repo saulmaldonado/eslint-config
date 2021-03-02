@@ -1,0 +1,73 @@
+name: eslint-config-base release
+
+on:
+  push:
+    paths:
+      - 'packages/base/*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set git config
+        run: |
+          git config user.name 'Github Actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump version
+        id: version
+        run: |
+          echo ::set-output name=ref::$(npm version major -m "chore: Bump to %s")
+        working-directory: ./packages/base
+
+      - run: git push
+      - run: git push --tags
+
+      - name: Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{steps.version.outputs.ref}}
+          release_name: ${{steps.version.outputs.ref}}
+
+  publish-npm:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'main'
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: NPM Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+        working-directory: ./packages/base
+
+  publish-gpr:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'main'
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@saulmaldonado'
+
+      - name: GPR Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        working-directory: ./packages/base
